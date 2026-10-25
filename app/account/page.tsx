@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import NameForm from "./NameForm";
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -9,6 +10,9 @@ export default async function AccountPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // You can read your own users row (Supabase row-level security).
+  const { data: profile } = await supabase.from("users").select("display_name").eq("id", user.id).maybeSingle();
 
   // Without the service role key in .env.local we can't read links yet, so show none.
   let rootLinks: { root_user_id: string; linked_at: string }[] | null = null;
@@ -27,6 +31,15 @@ export default async function AccountPage() {
       <p>
         Signed in as <strong>{user.email}</strong>.
       </p>
+
+      <div className="panel" style={{ margin: "24px 0" }}>
+        <h3>Your profile</h3>
+        <p>This name shows on your profile and on community leaderboards.</p>
+        <NameForm current={profile?.display_name ?? ""} />
+        <p style={{ marginTop: 16 }}>
+          <Link href={`/u/${user.id}`}>View your public profile →</Link>
+        </p>
+      </div>
 
       <div className="panel" style={{ margin: "24px 0" }}>
         <h3>Root</h3>

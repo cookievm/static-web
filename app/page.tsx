@@ -5,7 +5,7 @@ const features = [
   { title: "Now playing", text: "Show what you're listening to with a card that includes your play count." },
   { title: "Recent plays", text: "Your last five tracks on one clean card." },
   { title: "Top charts", text: "Your top artists, tracks and albums for the week, month, year or all time." },
-  { title: "Who knows", text: "See who in your community listens to an artist the most, and who holds the crown." },
+  { title: "Who knows", text: "See who in your community listens to an artist the most, and who holds the spark." },
   { title: "Leaderboards", text: "Weekly, monthly and all-time charts for your whole Root community." },
   { title: "Your history", text: "Bring your old listening history with you from a Spotify or ListenBrainz export." },
 ];

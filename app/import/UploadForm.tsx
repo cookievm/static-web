@@ -8,8 +8,8 @@ const MAX_BYTES = 50 * 1024 * 1024; // the storage limit on Supabase's free plan
 
 const kinds = [
   { value: "spotify_export", label: "Spotify (Extended Streaming History, .zip or .json)" },
-  { value: "listenbrainz_file", label: "ListenBrainz export (.json)" },
-  { value: "lastfm_file", label: "Scrobble history (.csv)" },
+  { value: "listenbrainz_file", label: "ListenBrainz export (.zip or .json)" },
+  { value: "lastfm_file", label: "Scrobble history CSV (.csv, or a .zip with the CSV inside)" },
 ];
 
 export default function UploadForm({ userId }: { userId: string }) {

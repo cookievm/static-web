@@ -1,7 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { ParsedFile } from "@/lib/imports/shared";
 import { readSpotifyExport } from "@/lib/imports/spotify";
+import { readLastfmCsv } from "@/lib/imports/lastfm";
+import { readListenbrainzExport } from "@/lib/imports/listenbrainz";
 
-// Works through uploaded Spotify history files, one import at a time.
+// Works through uploaded history files (Spotify, Last.fm, ListenBrainz), one import at a time.
 // Vercel Cron calls this with "Authorization: Bearer <CRON_SECRET>".
 // A big export may not finish in one run: it goes back to "queued" and the next run carries on from rows_done.
 
@@ -9,6 +12,13 @@ export const maxDuration = 300;
 
 const BATCH = 1000;
 const TIME_BUDGET_MS = 240_000; // stop well before Vercel's 300 s limit
+
+// imports.kind → the parser for that file, and the source saved on each listen.
+const READERS: Record<string, { read: (fileName: string, bytes: Uint8Array) => ParsedFile; source: string }> = {
+  spotify_export: { read: readSpotifyExport, source: "spotify_export" },
+  lastfm_file: { read: readLastfmCsv, source: "lastfm_file" },
+  listenbrainz_file: { read: readListenbrainzExport, source: "listenbrainz_file" },
+};
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -23,7 +33,7 @@ export async function GET(request: Request) {
   const { data: next } = await admin
     .from("imports")
     .select("id")
-    .eq("kind", "spotify_export")
+    .in("kind", Object.keys(READERS))
     .eq("status", "queued")
     .limit(1)
     .maybeSingle();
@@ -35,7 +45,7 @@ export async function GET(request: Request) {
     .update({ status: "running" })
     .eq("id", next.id)
     .eq("status", "queued")
-    .select("id, user_id, file_path, rows_done, rows_skipped")
+    .select("id, user_id, kind, file_path, rows_done, rows_skipped")
     .maybeSingle();
   if (!job) return Response.json({ status: "idle" });
 
@@ -45,13 +55,14 @@ export async function GET(request: Request) {
   try {
     const { data: file, error: downloadError } = await admin.storage.from("imports").download(job.file_path);
     if (downloadError || !file) throw new Error("Could not download the uploaded file.");
-    const items = readSpotifyExport(job.file_path, new Uint8Array(await file.arrayBuffer()));
+    const reader = READERS[job.kind];
+    const items = reader.read(job.file_path, new Uint8Array(await file.arrayBuffer()));
 
     while (rowsDone < items.length && Date.now() - started < TIME_BUDGET_MS) {
       const slice = items.slice(rowsDone, rowsDone + BATCH);
       const rows = slice
         .filter((listen) => listen !== null)
-        .map((listen) => ({ ...listen, user_id: job.user_id, import_id: job.id, track_ms: null, source: "spotify_export" }));
+        .map((listen) => ({ ...listen, user_id: job.user_id, import_id: job.id, source: reader.source }));
 
       // Plays already saved (same song, same minute) are skipped by the database.
       let saved = 0;

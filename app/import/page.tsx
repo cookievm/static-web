@@ -47,10 +47,10 @@ export default async function ImportPage() {
             <em>Extended streaming history</em>. Spotify emails it to you, which can take up to 30 days.
           </li>
           <li>
-            <strong>ListenBrainz:</strong> Settings → Export, then download your listens.
+            <strong>ListenBrainz:</strong> Settings → Export, then upload the .zip it gives you.
           </li>
           <li>
-            <strong>Other scrobble history:</strong> a CSV with artist, track, album and time columns.
+            <strong>Other scrobble history:</strong> a CSV export of your scrobbles, with artist, track, album and time columns.
           </li>
         </ul>
       </section>
