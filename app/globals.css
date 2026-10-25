@@ -484,3 +484,27 @@ input[type="file"] {
 .empty {
   color: var(--faint);
 }
+
+.button.danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--bg);
+}
+
+.danger-zone {
+  border-color: #5a2f33;
+}
+
+.prose h2 {
+  font-size: 20px;
+  margin: 32px 0 8px;
+}
+
+.prose ul {
+  color: var(--muted);
+  padding-left: 20px;
+}
+
+.prose li {
+  margin-bottom: 6px;
+}

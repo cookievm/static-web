@@ -16,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <Header />
         <main>{children}</main>
-        <footer className="footer">static. · your music, on record.</footer>
+        <footer className="footer">
+          static. · your music, on record. · <a href="/privacy">Privacy</a>
+        </footer>
       </body>
     </html>
   );

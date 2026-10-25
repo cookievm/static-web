@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import NameForm from "./NameForm";
+import DeleteAccount from "./DeleteAccount";
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -77,6 +78,14 @@ export default async function AccountPage() {
           Sign out
         </button>
       </form>
+
+      <div className="panel danger-zone" style={{ margin: "40px 0 0" }}>
+        <h3>Delete your account</h3>
+        <p style={{ marginBottom: 16 }}>
+          Removes everything static. has about you. See our <Link href="/privacy">privacy page</Link>.
+        </p>
+        <DeleteAccount />
+      </div>
     </div>
   );
 }

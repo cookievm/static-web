@@ -23,9 +23,11 @@ const steps = [
   },
 ];
 
-export default function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
+  const { deleted } = await searchParams;
   return (
     <>
+      {deleted && <p className="message" style={{ marginTop: 24 }}>Your account and all your data have been deleted.</p>}
       <section className="hero">
         <p className="eyebrow">Music stats for Root</p>
         <h1>your music, on record.</h1>
