@@ -25,8 +25,19 @@ export async function GET(request: Request, ctx: { params: Promise<{ communityId
 
   const { data, error } = await admin.rpc("community_sparks", { p_community: communityId, p_limit: limit });
   if (error) return botError(500, "Could not read sparks.");
-  const rows = (data ?? []) as { artist: string; display_name: string | null; plays: number; since: string }[];
+  const rows = (data ?? []) as { artist: string; user_id: string; display_name: string | null; plays: number; since: string }[];
+
+  // The Root account for each holder, so the bot can show Root nicknames.
+  const userIds = [...new Set(rows.map((r) => r.user_id))];
+  const { data: links } = userIds.length
+    ? await admin.from("root_links").select("user_id, root_user_id, linked_at").in("user_id", userIds).order("linked_at", { ascending: false })
+    : { data: [] };
+  const rootFor = new Map<string, string>();
+  for (const l of links ?? []) if (!rootFor.has(l.user_id)) rootFor.set(l.user_id, l.root_user_id);
+
   return Response.json({
-    sparks: rows.map((r) => ({ artist: r.artist, userName: r.display_name, plays: r.plays, since: r.since })),
+    sparks: rows.map((r) => ({
+      artist: r.artist, rootUserId: rootFor.get(r.user_id) ?? null, userName: r.display_name, plays: r.plays, since: r.since,
+    })),
   });
 }
