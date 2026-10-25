@@ -1,4 +1,5 @@
 import { botError, botUser, periodStart } from "@/lib/api/bot";
+import { getCovers } from "@/lib/covers";
 
 // Top artists/tracks/albums. ?type=artist|track|album (default artist),
 // ?period=7day|1month|3month|6month|12month|overall (default overall), ?limit= (1 to 100, default 10).
@@ -22,10 +23,12 @@ export async function GET(request: Request, ctx: { params: Promise<{ rootUserId:
   if (error) return Response.json({ error: "Could not read top items." }, { status: 500 });
 
   const items = (data ?? []) as { artist: string; name: string; plays: number }[];
+  // Covers only exist per album, so only album charts get them.
+  const covers = type === "album" ? await getCovers(admin, items.map((i) => ({ artist: i.artist, album: i.name }))) : [];
   return Response.json({
     userName,
     type,
     period,
-    items: items.map((i) => ({ artist: i.artist, name: i.name, plays: Number(i.plays) })),
+    items: items.map((i, n) => ({ artist: i.artist, name: i.name, plays: Number(i.plays), coverUrl: covers[n] ?? null })),
   });
 }

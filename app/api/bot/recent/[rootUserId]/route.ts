@@ -1,4 +1,5 @@
 import { botUser } from "@/lib/api/bot";
+import { getCovers } from "@/lib/covers";
 
 // Recent plays card. ?limit= (1 to 50, default 5).
 export async function GET(request: Request, ctx: { params: Promise<{ rootUserId: string }> }) {
@@ -24,9 +25,13 @@ export async function GET(request: Request, ctx: { params: Promise<{ rootUserId:
     .gte("updated_at", new Date(Date.now() - 10 * 60_000).toISOString())
     .maybeSingle();
 
+  const plays = data ?? [];
+  const covers = await getCovers(admin, [...(now ? [now] : []), ...plays]);
+  const nowCover = now ? covers.shift() ?? null : null;
+
   return Response.json({
     userName,
-    nowPlaying: now ?? null,
-    plays: (data ?? []).map((p) => ({ artist: p.artist, track: p.track, album: p.album, listenedAt: p.listened_at })),
+    nowPlaying: now ? { ...now, coverUrl: nowCover } : null,
+    plays: plays.map((p, i) => ({ artist: p.artist, track: p.track, album: p.album, listenedAt: p.listened_at, coverUrl: covers[i] })),
   });
 }

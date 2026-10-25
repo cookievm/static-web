@@ -1,4 +1,5 @@
 import { botUser } from "@/lib/api/bot";
+import { getCovers } from "@/lib/covers";
 
 // Now playing card: what's on (or the last play), plus how often the user has played that track.
 // "nowPlaying" is only true for 10 minutes after the scrobbler app last said so.
@@ -29,5 +30,6 @@ export async function GET(request: Request, ctx: { params: Promise<{ rootUserId:
   if (!track) return Response.json({ userName, nowPlaying: false, track: null });
 
   const { data: plays } = await admin.rpc("track_plays", { p_user: userId, p_artist: track.artist, p_track: track.track });
-  return Response.json({ userName, nowPlaying: Boolean(now), track: { ...track, plays: Number(plays ?? 0) } });
+  const [coverUrl] = await getCovers(admin, [{ artist: track.artist, album: track.album }]);
+  return Response.json({ userName, nowPlaying: Boolean(now), track: { ...track, plays: Number(plays ?? 0), coverUrl } });
 }

@@ -508,3 +508,12 @@ input[type="file"] {
 .prose li {
   margin-bottom: 6px;
 }
+
+.cover {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #1d2130, #2a2f3d);
+}

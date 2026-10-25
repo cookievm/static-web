@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { pickPeriod, sinceDate, timeAgo } from "@/lib/stats/periods";
 import PeriodTabs from "@/components/PeriodTabs";
 import RankedList from "@/components/RankedList";
+import Cover from "@/components/Cover";
+import { getCovers } from "@/lib/covers";
 
 type Props = { params: Promise<{ userId: string }>; searchParams: Promise<{ period?: string }> };
 
@@ -43,6 +45,16 @@ export default async function ProfilePage({ params, searchParams }: Props) {
     admin.rpc("user_total_plays", { p_user: userId }),
   ]);
 
+  // Covers for the top albums and recent plays, in one cached lookup.
+  const albumRows = (albums.data ?? []) as TopRow[];
+  const recentRows = recent.data ?? [];
+  const covers = await getCovers(admin, [
+    ...albumRows.map((r) => ({ artist: r.artist, album: r.name })),
+    ...recentRows.map((p) => ({ artist: p.artist, album: p.album })),
+  ]).catch(() => [] as (string | null)[]);
+  const albumCovers = covers.slice(0, albumRows.length);
+  const recentCovers = covers.slice(albumRows.length);
+
   // "Now playing" only counts if the scrobbler app updated it in the last 10 minutes.
   const live = nowPlaying.data && Date.now() - new Date(nowPlaying.data.updated_at).getTime() < 10 * 60_000 ? nowPlaying.data : null;
 
@@ -81,16 +93,20 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         </section>
         <section className="panel">
           <h2>Top albums</h2>
-          <RankedList items={toItems(albums.data as TopRow[] | null, true)} empty="No plays in this time yet." />
+          <RankedList
+            items={toItems(albumRows, true).map((item, i) => ({ ...item, cover: albumCovers[i] ?? null }))}
+            empty="No plays in this time yet."
+          />
         </section>
       </div>
 
       <section className="panel stack">
         <h2>Recent plays</h2>
-        {recent.data && recent.data.length > 0 ? (
+        {recentRows.length > 0 ? (
           <ul className="recent">
-            {recent.data.map((p) => (
+            {recentRows.map((p, i) => (
               <li key={p.id}>
+                <Cover url={recentCovers[i] ?? null} />
                 <span className="name">
                   {p.track}
                   <small>{p.artist}</small>
