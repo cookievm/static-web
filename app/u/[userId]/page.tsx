@@ -40,7 +40,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
     top("album"),
     admin.from("plays").select("id, artist, track, album, listened_at").eq("user_id", userId).order("listened_at", { ascending: false }).limit(10),
     admin.from("now_playing").select("artist, track, updated_at").eq("user_id", userId).maybeSingle(),
-    admin.from("plays").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    admin.rpc("user_total_plays", { p_user: userId }),
   ]);
 
   // "Now playing" only counts if the scrobbler app updated it in the last 10 minutes.
@@ -58,7 +58,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         <p className="eyebrow">Profile</p>
         <h1>{name}</h1>
         <p className="muted">
-          {(total.count ?? 0).toLocaleString("en-GB")} plays · on static. since{" "}
+          {Number(total.data ?? 0).toLocaleString("en-GB")} plays · on static. since{" "}
           {new Date(user.created_at).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
         </p>
         {live && (

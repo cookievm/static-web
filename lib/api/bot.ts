@@ -22,6 +22,40 @@ export async function botUser(request: Request, rootUserId: string) {
   return { admin, userId: data.user_id as string, userName: profile?.display_name ?? "static. user" };
 }
 
+// For community routes: only checks the bot key.
+export function botCheck(request: Request) {
+  if (!isBot(request)) return botError(401, "Wrong or missing bot key.");
+  return null;
+}
+
+// Community ?period=: calendar week (from Monday), month, quarter or year so far (UTC),
+// the rolling ones from periodStart, or all (default). until is always today.
+export function periodRange(period: string | null): { since: string | null } | undefined {
+  const now = new Date();
+  const day = (d: Date) => d.toISOString().slice(0, 10);
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  switch (period ?? "all") {
+    case "all":
+    case "overall":
+      return { since: null };
+    case "week": {
+      const back = (now.getUTCDay() + 6) % 7;
+      return { since: day(new Date(Date.UTC(y, m, now.getUTCDate() - back))) };
+    }
+    case "month":
+      return { since: day(new Date(Date.UTC(y, m, 1))) };
+    case "quarter":
+      return { since: day(new Date(Date.UTC(y, m - (m % 3), 1))) };
+    case "year":
+      return { since: day(new Date(Date.UTC(y, 0, 1))) };
+    default: {
+      const since = periodStart(period);
+      return since === undefined ? undefined : { since };
+    }
+  }
+}
+
 // Turns ?period= into the first day to count from (null = all time).
 export function periodStart(period: string | null) {
   const days: Record<string, number> = { "7day": 7, "1month": 30, "3month": 90, "6month": 180, "12month": 365 };
