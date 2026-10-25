@@ -12,6 +12,7 @@ export const maxDuration = 300;
 
 const BATCH = 1000;
 const TIME_BUDGET_MS = 240_000; // stop well before Vercel's 300 s limit
+const STALE_MS = 6 * 60_000;
 
 // imports.kind → the parser for that file, and the source saved on each listen.
 const READERS: Record<string, { read: (fileName: string, bytes: Uint8Array) => ParsedFile; source: string }> = {
@@ -29,22 +30,25 @@ export async function GET(request: Request) {
   const started = Date.now();
   const admin = createAdminClient();
 
-  // Any waiting import.
+  // A waiting import, or one whose run crashed: still "running" but untouched for 6 minutes.
+  // (A healthy run updates the row after every batch, which bumps updated_at.)
+  const stale = new Date(Date.now() - STALE_MS).toISOString();
   const { data: next } = await admin
     .from("imports")
-    .select("id")
+    .select("id, status, updated_at")
     .in("kind", Object.keys(READERS))
-    .eq("status", "queued")
+    .or(`status.eq.queued,and(status.eq.running,updated_at.lt.${stale})`)
     .limit(1)
     .maybeSingle();
   if (!next) return Response.json({ status: "idle" });
 
-  // Claim it. Only works if it's still queued, so two runs never take the same import.
+  // Claim it. Only works if nobody changed the row since we looked, so two runs never take the same import.
   const { data: job } = await admin
     .from("imports")
     .update({ status: "running" })
     .eq("id", next.id)
-    .eq("status", "queued")
+    .eq("status", next.status)
+    .eq("updated_at", next.updated_at)
     .select("id, user_id, kind, file_path, rows_done, rows_skipped")
     .maybeSingle();
   if (!job) return Response.json({ status: "idle" });
